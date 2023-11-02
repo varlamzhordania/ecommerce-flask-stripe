@@ -9,8 +9,8 @@ import sqlite3
 import sqlite3 as sql
 
 # Flask modules
-from flask   import render_template, request, jsonify, redirect, g, url_for
-from jinja2  import TemplateNotFound
+from flask import render_template, request, jsonify, redirect, g, url_for
+from jinja2 import TemplateNotFound
 from flask_login import login_required, logout_user, current_user, login_user
 from functools import wraps
 
@@ -18,19 +18,20 @@ from app.models import User
 from . import db
 
 # App modules
-from app      import app
+from app import app
 from app.util import get_products, Product, load_product, load_product_by_slug, load_json_product
 
 import stripe
 
 # Stripe Credentials
 stripe_keys = {
-    "secret_key"     : app.config['STRIPE_SECRET_KEY'     ] ,
-    "publishable_key": app.config['STRIPE_PUBLISHABLE_KEY'] ,
-    "endpoint_secret": app.config['STRIPE_SECRET_KEY'     ] ,
-} 
+    "secret_key": app.config['STRIPE_SECRET_KEY'],
+    "publishable_key": app.config['STRIPE_PUBLISHABLE_KEY'],
+    "endpoint_secret": app.config['STRIPE_SECRET_KEY'],
+}
 
 stripe.api_key = stripe_keys["secret_key"]
+
 
 ###############################################
 # AUTH 
@@ -45,13 +46,14 @@ def login():
         login_user(user=user, remember=True)
         return redirect('/')
 
-
     return render_template("pages/page-sign-in.html")
+
 
 @app.route('/logout/', methods=['GET'])
 def logout():
     logout_user()
     return redirect('/')
+
 
 @app.cli.command("create-user")
 def create_user():
@@ -64,7 +66,8 @@ def create_user():
     db.session.add(user)
     db.session.commit()
 
-# AUTH 
+
+# AUTH
 ###############################################
 
 @app.route("/config")
@@ -72,18 +75,20 @@ def get_publishable_key():
     stripe_config = {"publicKey": stripe_keys["publishable_key"]}
     return jsonify(stripe_config)
 
+
 @app.route("/success")
 def success():
     return render_template("ecommerce/payment-success.html")
+
 
 @app.route("/cancelled")
 def cancelled():
     return render_template("ecommerce/payment-cancelled.html")
 
+
 @app.route("/create-checkout-session/<path>/")
 def create_checkout_session(path):
-
-    product = load_product_by_slug( path )
+    product = load_product_by_slug(path)
 
     domain_url = app.config['SERVER_ADDRESS']
     stripe.api_key = stripe_keys["secret_key"]
@@ -116,52 +121,61 @@ def create_checkout_session(path):
     except Exception as e:
         return jsonify(error=str(e)), 403
 
+
 # Product Index
-@app.route('/',          defaults={'path': 'products/index.html'})
+@app.route('/', defaults={'path': 'products/index.html'})
 @app.route('/products/', defaults={'path': 'products/index.html'})
 def products_index(path):
-
     # Collect Products
     products = []
     featured_product = None
-    
+
     # Scan all JSONs in `templates/products`
-    for aJsonPath in get_products():  
-        
+    for aJsonPath in get_products():
+
         if 'featured.json' in aJsonPath:
             continue
 
         # Load the product info from JSON
-        product = load_product( aJsonPath )
-        
+        product = load_product(aJsonPath)
+
         # Is Valid? Save the object
-        if product:     
-            products.append( product )
+        if product:
+            products.append(product)
 
     # Render Products Page
-    return render_template( 'ecommerce/index.html', 
-                            products=products, 
-                            featured_product=load_product_by_slug('featured') )
+    # Custom Return
+    return render_template(
+        'ecommerce/template.html',
+        product=products[0],
+    )
+
+    # Original return
+    # return render_template(
+    #     'ecommerce/index.html',
+    #     products=products,
+    #     featured_product=load_product_by_slug('featured')
+    # )
+
 
 # List Product
-@app.route('/products/<path>/')
-def product_info(path):
+# @app.route('/products/<path>/')
+# def product_info(path):
+#     try:
+#         product = load_product_by_slug(path)
+#         return render_template('ecommerce/template.html', product=product)
+#     except:
+#         return render_template('pages/page-404.html')
 
-    try:
-        product = load_product_by_slug( path )
-        return render_template( 'ecommerce/template.html', product=product )
-    except:
-        return render_template( 'pages/page-404.html')
 
 # App main route + generic routing
 @app.route('/<path>')
 def index(path):
-
     try:
 
         # Serve the file (if exists) from app/templates/FILE.html
-        return render_template( 'pages/' + path )
-    
+        return render_template('pages/' + path)
+
     except TemplateNotFound:
         return render_template('pages/page-404.html'), 404
 
@@ -173,13 +187,13 @@ def load_product_json():
 
     # load stripe product
     if request.method == "POST":
-        products = stripe.Product.list(expand = ['data.default_price'])
+        products = stripe.Product.list(expand=['data.default_price'])
         productdict = []
         for product in products:
-            dict= {}
+            dict = {}
             dict['id'] = product['id']
             dict['name'] = product['name']
-            dict['price'] = product["default_price"]["unit_amount"]/100
+            dict['price'] = product["default_price"]["unit_amount"] / 100
             dict['currency'] = product["default_price"]["currency"]
             dict['full_description'] = product["description"]
             dict['info'] = product["description"][0:30]
@@ -193,18 +207,18 @@ def load_product_json():
             dict['img_3'] = ''
 
             productdict.append(dict)
-        
+
         for product in productdict:
-            json_product = json.dumps( product, indent=4, separators=(',', ': ') )
+            json_product = json.dumps(product, indent=4, separators=(',', ': '))
             json_data.append(json_product)
 
     # load local product
     local_products = []
-    for aJsonPath in get_products():  
+    for aJsonPath in get_products():
         if 'featured.json' in aJsonPath:
             continue
         local_json = load_json_product(aJsonPath)
-        local_products.append(json.dumps( local_json, indent=4, separators=(',', ': ') ))
+        local_products.append(json.dumps(local_json, indent=4, separators=(',', ': ')))
     return render_template('ecommerce/create-product.html', json_data=json_data, local_products=local_products)
 
 
@@ -217,13 +231,13 @@ def create_new_product():
         slug = name.lower().replace(' ', '-')
 
         try:
-            products = load_product_by_slug( slug )
+            products = load_product_by_slug(slug)
             if products:
                 return redirect('/load-products')
         except:
             outputFile = f'app/templates/products/{slug}.json'
-            with open(outputFile, "w") as outfile: 
-                outfile.write( product )
+            with open(outputFile, "w") as outfile:
+                outfile.write(product)
                 outfile.close()
             return redirect('/load-products')
     else:
@@ -249,7 +263,6 @@ def update_product(path):
         else:
             main_img = json.loads(product)['img_main']
 
-        
         # card image
         card_image = request.files.get('card_image', "")
         card_img = ''
@@ -259,7 +272,7 @@ def update_product(path):
             card_img = request.form.get('card_img_link')
         else:
             card_img = json.loads(product)['img_card']
-        
+
         # image 1
         image_1 = request.files.get('image_1', "")
         img_1 = ''
@@ -318,7 +331,7 @@ def update_product(path):
             return redirect('/load-products')
         except:
             # messages.error(request, "You can't update product id or name!")
-            return redirect('/load-products')  
+            return redirect('/load-products')
     else:
         return redirect('/load-products')
 
@@ -333,43 +346,50 @@ def delete_product(path):
         return redirect('/load-products')
     except:
         # messages.error(request, "You can't delete the product.")
-        return redirect('/load-products')  
+        return redirect('/load-products')
+
+    # Custom Filter
 
 
-
-
-# Custom Filter
 @app.template_filter('product_name')
 def product_name(obj):
     return json.loads(obj)['name']
+
 
 @app.template_filter('product_price')
 def product_price(obj):
     return json.loads(obj)['price']
 
+
 @app.template_filter('product_description')
 def product_description(obj):
     return json.loads(obj)['full_description']
+
 
 @app.template_filter('product_info')
 def product_info(obj):
     return json.loads(obj)['info']
 
+
 @app.template_filter('product_main_image')
 def product_main_image(obj):
     return json.loads(obj)['img_main']
+
 
 @app.template_filter('product_card_image')
 def product_card_image(obj):
     return json.loads(obj)['img_card']
 
+
 @app.template_filter('product_image1')
 def product_image1(obj):
     return json.loads(obj)['img_1']
 
+
 @app.template_filter('product_image2')
 def product_image2(obj):
     return json.loads(obj)['img_2']
+
 
 @app.template_filter('product_image3')
 def product_image3(obj):
@@ -382,11 +402,13 @@ def product_slug(obj):
     slug = name.lower().replace(' ', '-')
     return slug
 
+
 @app.template_filter('starts_with')
 def starts_with(obj):
     if obj.startswith('http'):
         return True
     return False
+
 
 @app.template_filter
 def is_logged_in():
