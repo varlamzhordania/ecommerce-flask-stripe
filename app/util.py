@@ -4,86 +4,91 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 import os, fnmatch, json
-from app import app 
+from app import app
+
 
 class Product:
-    id       = ''
-    name     = ''
-    price    = 0
+    id = ''
+    name = ''
+    price = 0
     currency = ''
-    info     = ''
+    info = ''
     full_description = ''
-    slug     = '' 
-    img_main   = ''
+    slug = ''
+    img_main = ''
     img_card = ''
     img_1 = ''
     img_2 = ''
     img_3 = ''
 
+
 def get_templates_dir():
-    return os.path.join(app.root_path, 'templates' )
+    return os.path.join(app.root_path, 'templates')
+
 
 def get_products_dir():
-    return os.path.join(app.root_path, 'templates', 'products' )
+    return os.path.join(app.root_path, 'templates', 'products')
 
-def get_product_path( aSlug ):
-    return os.path.join(app.root_path, 'templates', 'products', aSlug )
 
-def get_files( aPath, ext='html' ):
+def get_product_path(aSlug):
+    return os.path.join(app.root_path, 'templates', 'products', aSlug)
 
+
+def get_files(aPath, ext='html'):
     matches = []
 
-    for root, dirnames, filenames in os.walk( aPath ):
-        for filename in fnmatch.filter(filenames, '*.'+ ext):
-
+    for root, dirnames, filenames in os.walk(aPath):
+        for filename in fnmatch.filter(filenames, '*.' + ext):
             item = os.path.join(root, filename)
 
-            #print ' **** type(item) = ' + str( type ( item ) )
-            matches.append( item )
+            # print ' **** type(item) = ' + str( type ( item ) )
+            matches.append(item)
 
     return matches
 
-def get_products( ):
 
-    return get_files( get_products_dir(), 'json' )
+def get_products():
+    return get_files(get_products_dir(), 'json')
 
-def get_slug( aPath, aExt='json' ):
 
+def get_slug(aPath, aExt='json'):
     if aPath:
-        head, tail = os.path.split( aPath ) # get file name
-        return tail.replace('.' + aExt, '') # remove extension
+        head, tail = os.path.split(aPath)  # get file name
+        return tail.replace('.' + aExt, '')  # remove extension
 
     return None
 
-def load_json_product( aJSONPath ): 
+
+def load_json_product(aJSONPath):
     f = open(aJSONPath, 'r')
     if not f:
-        return None   
-    
-    # Read Product Info    
-    data = json.load( f )
+        return None
+
+        # Read Product Info
+    data = json.load(f)
 
     return data
 
-def load_product( aJSONPath ): 
+
+def load_product(aJSONPath):
     f = open(aJSONPath, 'r')
     if not f:
-        return None   
-    
-    # Read Product Info    
-    data = json.load( f )
-    
+        return None
+
+        # Read Product Info
+    data = json.load(f)
+
     if not data:
-        return None 
-    
+        return None
+
     product = Product()
 
-    product.name  = data["name"] 
-    product.info  = data["info"]
+    product.name = data["name"]
+    product.info = data["info"]
     product.currency = data["currency"]
-    product.price = int( float(data["price"]) )
-    product.full_description  = data["full_description"]
-    product.slug  = get_slug( aJSONPath )
+    product.price = int(float(data["price"]))
+    product.full_description = data["full_description"]
+    product.slug = get_slug(aJSONPath)
     try:
         product.img_main = data['img_main']
         product.img_card = data['img_card']
@@ -92,16 +97,17 @@ def load_product( aJSONPath ):
         product.img_3 = data['img_3']
         product.id = data['id']
     except:
-        product.id = get_slug( aJSONPath )
+        product.id = get_slug(aJSONPath)
 
     return product
 
-def load_product_by_slug( aSlug ):
 
-    aJSONPath = get_product_path( aSlug + '.json' )
+def load_product_by_slug(aSlug):
+    aJSONPath = get_product_path(aSlug + '.json')
 
-    return load_product( aJSONPath )
+    return load_product(aJSONPath)
 
-def load_product_by_id( id ):
-    aJSONPath = get_product_path( id + '.json' )
-    return load_product( aJSONPath )
+
+def load_product_by_id(id):
+    aJSONPath = get_product_path(id + '.json')
+    return load_product(aJSONPath)

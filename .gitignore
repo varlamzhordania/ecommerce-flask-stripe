@@ -8,12 +8,12 @@ yarn.lock
 yarn-error.log
 *.psd
 env/
-venv/
 env__/
 .vscode/symbols.json
 app/db.sqlite3
 
 .env
 .env__
-
+.venv
+venv
 instance/db.sqlite3

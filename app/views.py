@@ -123,7 +123,11 @@ def create_checkout_session(path):
 
 
 # Product Index
-@app.route('/', defaults={'path': 'products/index.html'})
+@app.route('/index.html', defaults={'path': 'pages/index.html'}, methods=["GET"])
+def render_index():
+    return render_template("pages/index.html")
+
+
 @app.route('/products/', defaults={'path': 'products/index.html'})
 def products_index(path):
     # Collect Products
@@ -144,40 +148,37 @@ def products_index(path):
             products.append(product)
 
     # Render Products Page
-    # Custom Return
     return render_template(
-        'ecommerce/template.html',
-        product=products[0],
+        'ecommerce/index.html',
+        products=products,
+        featured_product=load_product_by_slug('featured')
     )
-
-    # Original return
-    # return render_template(
-    #     'ecommerce/index.html',
-    #     products=products,
-    #     featured_product=load_product_by_slug('featured')
-    # )
 
 
 # List Product
-# @app.route('/products/<path>/')
-# def product_info(path):
-#     try:
-#         product = load_product_by_slug(path)
-#         return render_template('ecommerce/template.html', product=product)
-#     except:
-#         return render_template('pages/page-404.html')
+@app.route('/products/<path>/')
+def product_info(path):
+    try:
+        product = load_product_by_slug(path)
+        return render_template('ecommerce/template.html', product=product)
+    except:
+        return render_template('pages/page-404.html')
 
 
 # App main route + generic routing
 @app.route('/<path>')
 def index(path):
     try:
-
         # Serve the file (if exists) from app/templates/FILE.html
         return render_template('pages/' + path)
 
     except TemplateNotFound:
         return render_template('pages/page-404.html'), 404
+
+
+@app.route("/", methods=["GET"])
+def render_home():
+    return render_template("pages/index.html")
 
 
 @app.route('/load-products/', methods=['GET', 'POST'])
